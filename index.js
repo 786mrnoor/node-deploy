@@ -1,68 +1,44 @@
-const fs = require('fs');
-const index = fs.readFileSync('index.html', 'utf-8');
-const data = JSON.parse(fs.readFileSync('data.json', 'utf-8'));
-const products = data.products;
-console.log(index);
-console.log(products);
-
+require('dotenv').config()
 const express = require('express');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
+const cors = require('cors');
 const server = express();
+const path = require('path');
+const productRouter = require('./routes/product');
+const userRouter = require('./routes/user');
+console.log('env', process.env.DB_PASSWORD);
+
+//db connection
+main().catch(err => console.log(err));
+
+async function main() {
+    await mongoose.connect(process.env.MONGO_URL);
+    console.log('database connected');
+
+    // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
+}
+//Schema
+
+
+
 
 //body parser
+server.use(cors());
 server.use(express.json());
-// server.use(express.urlencoded());
-
-server.use(morgan('dev'))
-server.use(express.static('public'));
-// server.use((req, res, next) => {
-//     console.log(req.method, req.ip, req.hostname, new Date(), req.get('User-Agent'));
-//     next();
-// });
-
-const auth = (req, res, next) => {
-    console.log(req.query);
-
-    // if(req.query.password=='123'){
-    // if (req.body.password == '123') {
-    //     next()
-    // }
-    // else {
-    //     res.sendStatus(401);
-    // }
-    next();
-}
-
-
-server.get('/product/:id', auth, (req, res) => {
-    console.log(req.params);
-    res.json({ type: 'GET' });
-});
-server.post('/', auth, (req, res) => {
-    res.json({ type: 'POST' });
-});
-server.put('/', (req, res) => {
-    res.json({ type: 'PUT' });
-});
-server.delete('/', (req, res) => {
-    res.json({ type: 'DELETE' });
-});
-server.patch('/', (req, res) => {
-    res.json({ type: 'PATCH' });
-});
-
-
-
-server.get('/demo', (req, res) => {
-    // res.json(products);
-    // res.send('<h1>hello</h1>')
-    // res.sendFile('D:\\node js\\node-app\\index.html');
+server.use(morgan('default'));
+server.use(express.static(path.resolve(__dirname, process.env.PUBLIC_DIR)));
+server.use('/products', productRouter.router);
+server.use('/users', userRouter.router);
+server.use('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'build', 'index.html'))
 })
 
+//MVC model-view-controller
 
 
 
-server.listen(8080, () => {
+server.listen(process.env.PORT, () => {
     console.log('server started');
 });
 
